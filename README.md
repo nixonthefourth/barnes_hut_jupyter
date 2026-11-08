@@ -48,10 +48,10 @@ The notebook requires Python 3 (developed on 3.12) with NumPy and Matplotlib. Th
 
 The notebook is written to be run from top to bottom. The code cells fall into two groups:
 
-- **Definition cells** contain functions only and run instantly: the imports and constants, the helper functions, the conservation functions, the six integrators, the Barnes-Hut octree, and the logger, plotter, loader and runtime cells.
-- **Experiment cells** (Experiments 1 to 3) define a few experiment-specific functions and then run their simulations. Experiment 1 takes a few seconds; Experiments 2 and 3 take several minutes in pure Python.
+- **Definition cells** contain functions only and run instantly: the imports and constants, the helper functions, the conservation functions, the initial-condition generators, the six integrators and their registry, the Barnes-Hut octree, and the logger, plotter, loader and runtime cells.
+- **Experiment cells** (Experiments 1 to 3) define a few experiment-specific functions and then run their simulations. Experiment 1 takes a few seconds; Experiments 2 and 3 take a few minutes in pure Python.
 
-The JSON runtime depends only on the definition cells, with one exception: the randomised initial-condition generators `plummer` and `random_sphere` reuse `init_plummer`/`virialise` (defined in the Experiment 2 cell) and `init_random_3` (defined in the Experiment 3 cell). An experiment that uses an explicit list of bodies needs none of the experiment cells. If a required generator is missing, the runtime stops with a message naming the cell to run.
+Every function, class and import that is used by more than one cell is defined exactly once, in a definition cell. All imports are in the first code cell. The experiment cells depend only on the definition cells above them and never on each other, and the JSON runtime depends only on the definition cells. Any JSON experiment can therefore be run without running Experiments 1 to 3 first.
 
 Relative paths such as `"experiments/figure_eight.json"` are resolved from the working directory of the kernel, which in Jupyter and VS Code is the folder that contains the notebook.
 
@@ -64,21 +64,23 @@ The notebook is kept in dated entry order. Each feature is introduced by a markd
 | Section | Cell content | Main names defined |
 |---|---|---|
 | Introduction | Aims of the project and of the notebook, naming conventions | – |
-| Environment | Imports, random seed (`seed = 256`), Yoshida constants | `yoshida_x0`, `yoshida_x1` |
-| Helpers | Distances, initial velocities, direct-summation acceleration (Eq. 4) | `acc` |
-| Conservation | Kinetic and potential energy, Hamiltonian, linear and angular momentum and their relative errors | `conservation_state`, `h_rel`, `p_rel`, `l_rel` |
+| Environment | All imports, random seed (`seed = 256`), Yoshida constants, Hénon crossing time | `yoshida_x0`, `yoshida_x1`, `t_cross` |
+| Helpers | Body class, copies, random directions, centre-of-mass frame, distances, initial velocities, direct-summation acceleration (Eq. 4) | `Body`, `copy_bodies`, `random_direction`, `to_com_frame`, `acc` |
+| Conservation | Kinetic and potential energy, Hamiltonian, linear and angular momentum and their relative errors | `conservation_state`, `h_rel`, `vec_rel` (`p_rel`, `l_rel`) |
+| Initial conditions | Plummer sphere, uniform random sphere, virial rescaling | `init_plummer`, `init_random_sphere`, `virialise` |
 | Velocity Verlet 4th order | Yoshida composition of three Velocity Verlet steps | `run_vv_4` |
-| Experiment 1 | Three-body figure-eight choreography | `Body` |
-| Barnes-Hut octree | Tree construction, mass moments, tree walk | `acc_bh`, `build_tree_bh` |
-| Experiment 2 | Plummer cluster: direct summation against Barnes-Hut | `init_plummer`, `virialise`, `simulate` |
+| Experiment 1 | Three-body figure-eight choreography | – |
+| Barnes-Hut octree | Tree construction, mass moments, tree walk, tree utilities | `acc_bh`, `build_tree_bh`, `acc_bh_theta`, `force_error_bh`, `tree_stats_bh` |
+| Experiment 2 | Plummer cluster: direct summation against Barnes-Hut | `simulate` |
 | Leapfrog | Kick-drift-kick leapfrog, 2nd order | `run_l_2` |
 | Forest-Ruth | Forest-Ruth, 4th order | `run_fr_4` |
 | Forward Euler | Explicit Euler, 1st order | `run_fe_1` |
 | RK2 | Explicit midpoint method, 2nd order | `run_rk_2`, `acc_stage` |
 | RK4 | Classical Runge-Kutta, 4th order | `run_rk_4` |
-| Experiment 3 | Integrator hot-swap in a random 20-body system | `init_random_3`, `simulate_hot_swap` |
+| Integrator registry | Table of all six integrators under short keys | `integrator_registry` |
+| Experiment 3 | Integrator hot-swap in a random 20-body system | `CountedForce`, `simulate_hot_swap` |
 | Automation | Logger and plotter | `init_log`, `log_state`, `plot_log` |
-| | JSON loader | `load_experiment`, `integrator_registry` |
+| | JSON loader | `load_experiment`, `build_bodies`, `build_force` |
 | | Runtime | `run_experiment`, `run_experiments` |
 | | Example run | – |
 | References | Full reference list (Author, Year) | – |
@@ -89,7 +91,9 @@ The notebook is kept in dated entry order. Each feature is introduced by a markd
 
 **Function names.** Integrators and their helper functions follow the pattern `operation_integrator_order`: for example `displ_vv_4` is the displacement update of Velocity Verlet 4th order, and `run_fr_4` the driver of Forest-Ruth 4th order. Barnes-Hut functions end in `_bh`. Mathematical quantities take their literal names (`numerator`, `denominator`, `product`).
 
-**Bodies.** A body is any object with four attributes: mass `m` (scalar), displacement `r`, velocity `v` and acceleration `a` (each a NumPy array of three components). The class `Body` is the minimal implementation. It is declared in Experiment 1, again in Experiment 3 and again in the JSON loader cell, so that each of these cells can be run without the others; the three declarations are identical.
+**Bodies.** A body is any object with four attributes: mass `m` (scalar), displacement `r`, velocity `v` and acceleration `a` (each a NumPy array of three components). The class `Body` in the helpers cell is the minimal implementation, and `copy_bodies` makes an independent copy of a list of bodies.
+
+**Equations.** Displayed equations in the markdown cells are numbered consecutively through the notebook and are defined once. Later sections cite an earlier equation as Eq. (*n*) instead of restating it. For example, the relative errors of the energy and of both momenta are a single definition, Eq. (15), and the Runge-Kutta 4th order explanation reuses the first two RK2 stages, Eq. (42) and Eq. (43). Code comments cite the same numbers.
 
 **Integrator signature.** Every integrator has the signature
 
@@ -99,7 +103,7 @@ run_*(bod_obj, G, e, dt, n_steps, acc_func=acc)
 
 and advances the list `bod_obj` *in place* by `n_steps` steps of size `dt`, evaluating forces through `acc_func`. Every integrator recomputes the accelerations from the positions on entry and leaves `r` and `v` at the same instant on exit. Consequently, consecutive calls to the same or to different integrators continue a run seamlessly, which is what makes the hot-swap of Experiment 3 exact.
 
-**Force-routine signature.** A force routine has the signature `acc_func(G, bod_obj, e)` and returns a list of acceleration vectors, one per body. `acc_bh` takes the opening angle `theta` as an additional fourth argument, so it is wrapped in a lambda that fixes `theta`.
+**Force-routine signature.** A force routine has the signature `acc_func(G, bod_obj, e)` and returns a list of acceleration vectors, one per body. `acc_bh` takes the opening angle `theta` as an additional fourth argument, so `acc_bh_theta(theta)` returns a three-argument version with `theta` fixed.
 
 **Units.** All experiments use natural units with `G = 1`. Experiment 1 uses the dimensionless figure-eight units (unit masses); Experiments 2 and 3 use Hénon units (total mass `M = 1`, total energy `E = -1/4`, crossing time `2√2`).
 
@@ -124,9 +128,11 @@ The conservation cell provides the absolute quantities and their relative errors
 
 | Quantity | Absolute | Relative error |
 |---|---|---|
-| Hamiltonian | `H = T + V` (`t_abs`, `v_abs`, `h_abs`) | `h_rel = abs(H_n − H_0) / abs(H_0)` |
-| Linear momentum | `P = Σ m_i v_i` (`p_abs`) | `p_rel = abs(P_n − P_0) / P_ref` |
-| Angular momentum | `L = Σ m_i (r_i × v_i)` (`l_abs`) | `l_rel = abs(L_n − L_0) / L_ref` |
+| Hamiltonian | `H = T + V`, Eq. (10) to (12) (`t_abs`, `v_abs`, `h_abs`) | `h_rel = abs(H_n − H_0) / abs(H_0)` |
+| Linear momentum | `P = Σ m_i v_i`, Eq. (13) (`p_abs`) | `p_rel = abs(P_n − P_0) / P_ref` |
+| Angular momentum | `L = Σ m_i (r_i × v_i)`, Eq. (14) (`l_abs`) | `l_rel = abs(L_n − L_0) / L_ref` |
+
+All three relative errors are instances of the single definition of Eq. (15). In the code, `p_rel` and `l_rel` are two names for the same function `vec_rel`, the relative error of a conserved vector.
 
 `P_ref` and `L_ref` equal `|P_0|` and `|L_0|` unless the initial momentum is (numerically) zero, as it is in any centre-of-mass frame. In that case the relative error would be undefined, and the characteristic sizes `p_scale = Σ m_i |v_i|` and `l_scale = Σ m_i |r_i × v_i|` are used instead. `conservation_state(bod_obj, G, e)` returns the triple `(H, P, L)` in one call. All conserved quantities are always evaluated with the exact pair sums, never with the tree, so Barnes-Hut runs are judged against the true Hamiltonian.
 
@@ -141,7 +147,7 @@ The conservation cell provides the absolute quantities and their relative errors
 | `RK2` | `run_rk_2` | Explicit midpoint (Runge, 1895) | 2 | no | 2 |
 | `RK4` | `run_rk_4` | Classical Runge-Kutta (Kutta, 1901) | 4 | no | 4 |
 
-The keys in the first column are the names used in JSON experiment files.
+The keys in the first column are the keys of `integrator_registry`, which Experiment 3 and the JSON experiment files use to name the integrators.
 
 ---
 
@@ -356,7 +362,7 @@ The key `type` selects one of three kinds of initial conditions.
 | `list` | yes | – | At least two bodies, each `{"m": mass, "r": [x, y, z], "v": [vx, vy, vz]}` |
 | `centre_of_mass_frame` | no | `false` | Shift positions and velocities to the centre-of-mass frame, so that `P_0 = 0` and the system does not drift |
 
-**`"plummer"`: a Plummer sphere** (requires the Experiment 2 cell)
+**`"plummer"`: a Plummer sphere** (`init_plummer`, as in Experiment 2)
 
 | Key | Required | Default | Meaning |
 |---|---|---|---|
@@ -366,7 +372,7 @@ The key `type` selects one of three kinds of initial conditions.
 | `r_cut` | no | `10.0` | Radius cut-off in units of `a` |
 | `virialise` | no | `true` | Rescale the velocities to exact virial equilibrium `2T + V = 0` |
 
-**`"random_sphere"`: a uniform random sphere with unequal masses** (requires the Experiment 3 cell)
+**`"random_sphere"`: a uniform random sphere with unequal masses** (`init_random_sphere`, as in Experiment 3)
 
 | Key | Required | Default | Meaning |
 |---|---|---|---|
@@ -474,11 +480,13 @@ results = run_experiments(sorted(Path("experiments").glob("*.json")))
 
 ## 13. Extending the notebook
 
-**A new integrator.** Implement `run_<name>_<order>(bod_obj, G, e, dt, n_steps, acc_func=acc)` following the conventions in [Section 4](#4-conventions): advance in place, recompute `a` on entry, and leave `r` and `v` at the same instant. Then add an entry to `integrator_registry` in the loader cell. The new key is then available in every JSON file and in hot-swap schedules.
+**A new integrator.** Implement `run_<name>_<order>(bod_obj, G, e, dt, n_steps, acc_func=acc)` following the conventions in [Section 4](#4-conventions): advance in place, recompute `a` on entry, and leave `r` and `v` at the same instant. Then add an entry to `integrator_registry` in the integrator registry cell. The new key is then available in Experiment 3, in every JSON file and in hot-swap schedules.
 
-**A new kind of initial conditions.** Add an entry `"<type>": ([required keys], {optional keys: defaults})` to `schema_bodies`, and a matching branch in `build_bodies` that returns a list of `Body` objects.
+**A new kind of initial conditions.** Write the generator in the initial conditions cell, using the shared helpers (`Body`, `random_direction`, `to_com_frame`, `virialise`). Then add an entry `"<type>": ([required keys], {optional keys: defaults})` to `schema_bodies` in the loader cell, and a matching branch in `build_bodies` that calls the generator.
 
 **A new force routine.** Add an entry to `schema_force` and a branch in `build_force` that returns a function with the signature `(G, bod_obj, e)`.
+
+**Shared code.** Any function that a second cell needs belongs in one of the definition cells, and any new import belongs in the first code cell. Experiment cells should only hold their parameters, their experiment-specific diagnostics and their plots.
 
 **A new logged quantity.** Append its name to `log_scalar_columns` and its value to the scalar row written in `log_state`. The displacement columns move along automatically, because they always start after the scalar columns.
 
@@ -493,7 +501,6 @@ np.savetxt("results.csv", log_rows(log), delimiter=",", header=",".join(log["col
 ## 14. Known limitations
 
 - **Pure Python.** Forces are evaluated with Python loops, so runs with more than about a hundred bodies, or with many steps, are slow. This is acceptable for a prototype; performance is the task of the C++ implementation.
-- **Generators live in experiment cells.** The `plummer` and `random_sphere` initial conditions depend on functions defined in the Experiment 2 and 3 cells (see [Section 2](#2-requirements-and-running-order)).
 - **One run per file.** A JSON file describes one run. Comparisons, such as direct summation against Barnes-Hut in Experiment 2, are made by running several files and comparing their logs.
 - **In-memory log only.** The log is not saved to disk yet. Saving takes one call (see [Section 13](#13-extending-the-notebook)).
 - **Memory.** The table holds `(n_frames + 1) × (7 + 3N)` floating-point numbers, which is about 7 MB for 1000 frames of 300 bodies. Keep `n_frames` moderate for large N.
