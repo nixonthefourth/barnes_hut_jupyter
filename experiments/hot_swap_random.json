@@ -1,0 +1,33 @@
+{
+  "_comment": "The hot-swap schedule of Experiment 3 as a JSON experiment: a randomised 20-body system with unequal masses, Barnes-Hut forces and one crossing time per integrator. Requires the Experiment 3 cell to have been run (init_random_3).",
+  "name": "Integrator hot-swap, random 20-body system",
+  "description": "L2 -> RK2 -> FR4 -> RK4 -> VV4 -> FE1, one crossing time each, Barnes-Hut (theta = 0.5).",
+  "seed": 256,
+  "G": 1.0,
+  "softening": 0.05,
+  "integrator": ["L2", "RK2", "FR4", "RK4", "VV4", "FE1"],
+  "force": {"method": "barnes_hut", "theta": 0.5},
+  "time": {
+    "duration": 6,
+    "unit": 2.8284271247461903,
+    "unit_name": "crossing times",
+    "n_steps": 3000,
+    "n_frames": 600
+  },
+  "bodies": {
+    "type": "random_sphere",
+    "N": 20,
+    "M": 1.0,
+    "R": 1.2,
+    "mass_spread": 0.5,
+    "q_virial": 0.5
+  },
+  "plots": {
+    "orbit_3d": true,
+    "orbit_2d": ["xy"],
+    "h_rel": true,
+    "p_rel": true,
+    "l_rel": true,
+    "max_bodies": 8
+  }
+}

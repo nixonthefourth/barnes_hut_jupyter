@@ -1,0 +1,29 @@
+{
+  "_comment": "The figure-eight integrated with Forward Euler for a single period. Only the x-y projection and the Hamiltonian drift are plotted: every other panel is switched off in the plots block.",
+  "name": "Figure-eight with Forward Euler",
+  "description": "Non-symplectic first-order baseline: systematic energy drift and loss of closure.",
+  "integrator": "FE1",
+  "time": {
+    "duration": 1,
+    "unit": 6.32591398,
+    "unit_name": "orbital periods",
+    "n_steps": 20000,
+    "n_frames": 500
+  },
+  "bodies": {
+    "type": "explicit",
+    "list": [
+      {"m": 1.0, "r": [0.97000436, -0.24308753, 0.0], "v": [0.466203685, 0.43236573, 0.0]},
+      {"m": 1.0, "r": [0.0, 0.0, 0.0], "v": [-0.93240737, -0.86473146, 0.0]},
+      {"m": 1.0, "r": [-0.97000436, 0.24308753, 0.0], "v": [0.466203685, 0.43236573, 0.0]}
+    ]
+  },
+  "plots": {
+    "orbit_3d": false,
+    "orbit_2d": ["xy"],
+    "h_rel": true,
+    "p_rel": false,
+    "l_rel": false
+  },
+  "report": {"closure": true}
+}

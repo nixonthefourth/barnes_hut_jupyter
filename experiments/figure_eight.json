@@ -1,0 +1,35 @@
+{
+  "_comment": "Experiment 1 rewritten as a JSON experiment: the three-body figure-eight choreography (Moore, 1993; Chenciner & Montgomery, 2000) with Simo's initial conditions in natural units G = m = 1.",
+  "name": "Three-body figure-eight",
+  "description": "Validation of VV4 on a periodic orbit with a known exact answer.",
+  "seed": 256,
+  "G": 1.0,
+  "softening": 0.0,
+  "integrator": "VV4",
+  "force": {"method": "direct"},
+  "time": {
+    "_comment": "t_total = duration * unit = 3 orbital periods; dt = t_total / n_steps",
+    "duration": 3,
+    "unit": 6.32591398,
+    "unit_name": "orbital periods",
+    "n_steps": 30000,
+    "n_frames": 1500
+  },
+  "bodies": {
+    "type": "explicit",
+    "_comment": "body 2 at the centre of the eight, bodies 1 and 3 mirror images; v1 = v3 = -v2 / 2, so P_0 = 0",
+    "list": [
+      {"m": 1.0, "r": [0.97000436, -0.24308753, 0.0], "v": [0.466203685, 0.43236573, 0.0]},
+      {"m": 1.0, "r": [0.0, 0.0, 0.0], "v": [-0.93240737, -0.86473146, 0.0]},
+      {"m": 1.0, "r": [-0.97000436, 0.24308753, 0.0], "v": [0.466203685, 0.43236573, 0.0]}
+    ]
+  },
+  "plots": {
+    "orbit_3d": true,
+    "orbit_2d": ["xy"],
+    "h_rel": true,
+    "p_rel": true,
+    "l_rel": true
+  },
+  "report": {"closure": true}
+}

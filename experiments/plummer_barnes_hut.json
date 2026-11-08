@@ -1,0 +1,35 @@
+{
+  "_comment": "One run of Experiment 2: a 64-body Plummer sphere in Henon units (G = M = 1, E = -1/4), integrated with VV4 and the Barnes-Hut octree. Requires the Experiment 2 cell to have been run (init_plummer, virialise).",
+  "name": "Plummer cluster, Barnes-Hut",
+  "description": "64-body Plummer sphere, VV4 with Barnes-Hut forces (theta = 0.5).",
+  "seed": 256,
+  "G": 1.0,
+  "softening": 0.05,
+  "integrator": "VV4",
+  "force": {"method": "barnes_hut", "theta": 0.5},
+  "time": {
+    "_comment": "unit = Henon crossing time 2 sqrt(2)",
+    "duration": 2,
+    "unit": 2.8284271247461903,
+    "unit_name": "crossing times",
+    "n_steps": 500,
+    "n_frames": 250
+  },
+  "bodies": {
+    "type": "plummer",
+    "_comment": "a = null uses the default 3 pi G M^2 / 16, which gives E = -1/4",
+    "N": 64,
+    "M": 1.0,
+    "a": null,
+    "r_cut": 10.0,
+    "virialise": true
+  },
+  "plots": {
+    "orbit_3d": true,
+    "orbit_2d": ["xy", "xz"],
+    "h_rel": true,
+    "p_rel": true,
+    "l_rel": true,
+    "max_bodies": 6
+  }
+}
