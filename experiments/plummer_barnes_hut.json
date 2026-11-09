@@ -1,5 +1,5 @@
 {
-  "_comment": "One run of Experiment 2: a 64-body Plummer sphere in Henon units (G = M = 1, E = -1/4), integrated with VV4 and the Barnes-Hut octree. Requires the Experiment 2 cell to have been run (init_plummer, virialise).",
+  "_comment": "One run of Experiment 2: a 64-body Plummer sphere in Henon units (G = M = 1, E = -1/4), integrated with VV4 and the Barnes-Hut octree.",
   "name": "Plummer cluster, Barnes-Hut",
   "description": "64-body Plummer sphere, VV4 with Barnes-Hut forces (theta = 0.5).",
   "seed": 256,

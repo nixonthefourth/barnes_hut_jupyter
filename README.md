@@ -71,6 +71,7 @@ The notebook is kept in dated entry order. Each feature is introduced by a markd
 | Velocity Verlet 4th order | Yoshida composition of three Velocity Verlet steps | `run_vv_4` |
 | Experiment 1 | Three-body figure-eight choreography | – |
 | Barnes-Hut octree | Tree construction, mass moments, tree walk, tree utilities | `acc_bh`, `build_tree_bh`, `acc_bh_theta`, `force_error_bh`, `tree_stats_bh` |
+| Plummer sphere | Explanation only: potential, density and distribution function of the model, the sampling method of `init_plummer`, Hénon units, finite-N effects and virial rescaling (Eqs. 21–30) | – |
 | Experiment 2 | Plummer cluster: direct summation against Barnes-Hut | `simulate` |
 | Leapfrog | Kick-drift-kick leapfrog, 2nd order | `run_l_2` |
 | Forest-Ruth | Forest-Ruth, 4th order | `run_fr_4` |
@@ -93,7 +94,7 @@ The notebook is kept in dated entry order. Each feature is introduced by a markd
 
 **Bodies.** A body is any object with four attributes: mass `m` (scalar), displacement `r`, velocity `v` and acceleration `a` (each a NumPy array of three components). The class `Body` in the helpers cell is the minimal implementation, and `copy_bodies` makes an independent copy of a list of bodies.
 
-**Equations.** Displayed equations in the markdown cells are numbered consecutively through the notebook and are defined once. Later sections cite an earlier equation as Eq. (*n*) instead of restating it. For example, the relative errors of the energy and of both momenta are a single definition, Eq. (15), and the Runge-Kutta 4th order explanation reuses the first two RK2 stages, Eq. (42) and Eq. (43). Code comments cite the same numbers.
+**Equations.** Displayed equations in the markdown cells are numbered consecutively through the notebook and are defined once. Later sections cite an earlier equation as Eq. (*n*) instead of restating it. For example, the relative errors of the energy and of both momenta are a single definition, Eq. (15), and the Runge-Kutta 4th order explanation reuses the first two RK2 stages, Eq. (52) and Eq. (53). Code comments cite the same numbers.
 
 **Integrator signature.** Every integrator has the signature
 

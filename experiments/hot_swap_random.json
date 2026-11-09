@@ -1,5 +1,5 @@
 {
-  "_comment": "The hot-swap schedule of Experiment 3 as a JSON experiment: a randomised 20-body system with unequal masses, Barnes-Hut forces and one crossing time per integrator. Requires the Experiment 3 cell to have been run (init_random_3).",
+  "_comment": "The hot-swap schedule of Experiment 3 as a JSON experiment: a randomised 20-body system with unequal masses, Barnes-Hut forces and one crossing time per integrator.",
   "name": "Integrator hot-swap, random 20-body system",
   "description": "L2 -> RK2 -> FR4 -> RK4 -> VV4 -> FE1, one crossing time each, Barnes-Hut (theta = 0.5).",
   "seed": 256,
